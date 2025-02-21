@@ -15,6 +15,7 @@ TOKEN = os.getenv("7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8")
 
 # Ініціалізація бота з новими параметрами
 from aiogram.enums import ParseMode
+TOKEN = "7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8"  # Замість цього токену поставте справжній
 
 ...
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
