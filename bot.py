@@ -1,27 +1,26 @@
 import os
 import threading
-from flask import Flask
 import asyncio
 import logging
+from flask import Flask
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
-from aiogram.utils import executor
 from ebooklib import epub
 from bs4 import BeautifulSoup
 
-# Налаштовуємо логування
+# Налаштування логування
 logging.basicConfig(level=logging.INFO)
 
-# Отримання токена з середовища або безпосередньо
-TOKEN = os.getenv("7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8")  # або "YOUR_BOT_TOKEN"
+# Отримання токена з середовища
+TOKEN = os.getenv("7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8")
 
-# Ініціалізація бота з новим синтаксисом для parse_mode
+# Ініціалізація бота з новими параметрами
 from aiogram.client.default import DefaultBotProperties
 
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(bot)
 
-# Створюємо простий Flask-сервер
+# Простий Flask сервер для відкриття порту (Render потребує відкритого порту)
 app = Flask(__name__)
 
 @app.route('/')
@@ -35,7 +34,6 @@ def run_flask():
 # Запускаємо Flask у окремому потоці
 threading.Thread(target=run_flask).start()
 
-# ---- Код бота ----
 # Словник для збереження книг по користувачам
 user_books = {}
 
@@ -79,12 +77,20 @@ async def send_book(message: types.Message):
         return
 
     text = user_books[user_id]
-    chunk_size = 1000  # Можна налаштувати
+    chunk_size = 1000  # можна налаштувати
     for i in range(0, len(text), chunk_size):
         await message.answer(text[i:i+chunk_size])
         await asyncio.sleep(1)
     await message.answer("Це кінець книги!")
 
+# Асинхронна функція для запуску polling
+async def main():
+    try:
+        await dp.start_polling()
+    finally:
+        await bot.session.close()
+
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
+
 
