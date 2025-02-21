@@ -1,98 +1,64 @@
 import os
-import threading
-import asyncio
-import logging
-from flask import Flask
 from aiogram import Bot, Dispatcher, types
-from aiogram.client.default import DefaultBotProperties
+from aiogram.types import ParseMode
+from aiogram import executor
+import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
-# Налаштування логування
-logging.basicConfig(level=logging.INFO)
 
-# Отримання токена з середовища
+# Отримуємо токен із змінної середовища
 TOKEN = os.getenv("7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8")
 
-# Ініціалізація бота з новими параметрами
-from aiogram.enums import ParseMode
-TOKEN = "7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8"  # Замість цього токену поставте справжній
+if not TOKEN:
+    print("TOKEN не знайдено!")
+    exit(1)
 
-...
-bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-
+# Ініціалізація бота
+bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-# Простий Flask сервер для відкриття порту (Render потребує відкритого порту)
-app = Flask(__name__)
+# Функція для читання EPUB
+def read_epub(file_path):
+    book = epub.read_epub(file_path)
+    content = []
+    
+    # Переглядаємо всі елементи книги (наприклад, <body> з HTML)
+    for item in book.get_items():
+        if item.get_type() == ebooklib.ITEM_DOCUMENT:
+            soup = BeautifulSoup(item.get_body(), 'html.parser')
+            # Додаємо лише текст з HTML елементів
+            content.append(soup.get_text())
+    
+    return "\n".join(content)  # Повертатимемо весь текст книги як один рядок
 
-@app.route('/')
-def index():
-    return "Бот працює!"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-# Запускаємо Flask у окремому потоці
-threading.Thread(target=run_flask).start()
-
-# Словник для збереження книг по користувачам
-user_books = {}
-
-# Обробка команди /start
+# Хендлер для команди /start
 @dp.message_handler(commands=['start'])
-async def send_welcome(message: types.Message):
-    await message.answer("Привіт! Надішли мені книгу у форматі EPUB 📚")
+async def start(message: types.Message):
+    await message.reply("Привіт! Я бот для обробки книг у форматі EPUB. Надішліть мені файл EPUB!")
 
-# Обробка отриманого файлу EPUB
+# Хендлер для отримання файлів
 @dp.message_handler(content_types=types.ContentType.DOCUMENT)
-async def handle_document(message: types.Message):
-    if not message.document.file_name.endswith(".epub"):
-        await message.answer("Будь ласка, надішли файл у форматі EPUB 📖")
-        return
+async def handle_epub(message: types.Message):
+    # Перевірка чи це файл EPUB
+    file_name = message.document.file_name
+    if file_name.endswith('.epub'):
+        # Завантаження файлу
+        file_info = await bot.get_file(message.document.file_id)
+        file_path = file_info.file_path
+        file = await bot.download_file(file_path)
+        
+        # Збереження файлу
+        with open('temp_book.epub', 'wb') as f:
+            f.write(file)
+        
+        # Читання вмісту книги
+        book_content = read_epub('temp_book.epub')
+        
+        # Відправка частини тексту (щоб не перевантажити Telegram)
+        await message.reply(f"Ось частина вмісту книги:\n\n{book_content[:4096]}")  # Обмеження 4096 символів
+    else:
+        await message.reply("Це не EPUB файл. Будь ласка, надішліть EPUB файл.")
 
-    file_id = message.document.file_id
-    file_path = f"downloads/{file_id}.epub"
-    os.makedirs("downloads", exist_ok=True)
-    await message.document.download(destination=file_path)
-    await message.answer("Книга отримана! Обробляю...")
-
-    try:
-        book = epub.read_epub(file_path)
-        text = ""
-        for item in book.get_items():
-            if item.get_type() == epub.ITEM_DOCUMENT:
-                soup = BeautifulSoup(item.get_body_content(), "html.parser")
-                text += soup.get_text() + "\n\n"
-        user_books[message.chat.id] = text
-        await message.answer("Книга готова до читання! Напиши /read, щоб почати.")
-    except Exception as e:
-        await message.answer("Виникла помилка при обробці книги.")
-        logging.error(f"Error reading EPUB: {e}")
-
-# Команда /read – відправка тексту частинами
-@dp.message_handler(commands=['read'])
-async def send_book(message: types.Message):
-    user_id = message.chat.id
-    if user_id not in user_books:
-        await message.answer("Спочатку надішли книгу!")
-        return
-
-    text = user_books[user_id]
-    chunk_size = 1000  # можна налаштувати
-    for i in range(0, len(text), chunk_size):
-        await message.answer(text[i:i+chunk_size])
-        await asyncio.sleep(1)
-    await message.answer("Це кінець книги!")
-
-# Асинхронна функція для запуску polling
-async def main():
-    try:
-        await dp.start_polling()
-    finally:
-        await bot.session.close()
-
+# Запуск бота
 if __name__ == '__main__':
-    asyncio.run(main())
-
-
+    executor.start_polling(dp, skip_updates=True)
