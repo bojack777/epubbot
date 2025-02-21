@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from ebooklib import epub
 from bs4 import BeautifulSoup
-
+print(f"TOKEN: {TOKEN}")  # Друкуємо токен у логах
 # Налаштування логування
 logging.basicConfig(level=logging.INFO)
 
