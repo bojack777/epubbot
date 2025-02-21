@@ -1,0 +1,4 @@
+aiogram
+EbookLib
+beautifulsoup4
+lxml
