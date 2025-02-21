@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 print(f"TOKEN: {TOKEN}")  # Друкуємо токен у логах
 # Налаштування логування
 logging.basicConfig(level=logging.INFO)
+TOKEN = "7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8"
 
 # Отримання токена з середовища
 TOKEN = os.getenv("7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8")
