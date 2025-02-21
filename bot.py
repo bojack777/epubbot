@@ -15,9 +15,10 @@ logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv("7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8")
 
 # Ініціалізація бота з новими параметрами
-from aiogram.client.default import DefaultBotProperties
-
+from aiogram.types import ParseMode
+...
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+
 dp = Dispatcher(bot)
 
 # Простий Flask сервер для відкриття порту (Render потребує відкритого порту)
