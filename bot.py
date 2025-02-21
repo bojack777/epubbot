@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv("7421379071:AAEu0-FZdi1KBzpusgFc4Ipe2e3oCqoPiZ8")
 
 # Ініціалізація бота з новими параметрами
-from aiogram.types import ParseMode
+from aiogram.enums import ParseMode
+
 ...
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
